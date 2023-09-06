@@ -15,7 +15,7 @@ BEGIN
             current_timestamp() as run_id,
             tools.qtag(query_text, true, true) as qtag,
             DATEDIFF('day', START_TIME, END_TIME) + 1 AS PERIOD_PLUS,
-            IFF(index = PERIOD_PLUS, 'DAILY', 'COMPLETE') AS RECORD_TYPE,
+            IFF(index = PERIOD_PLUS, 'COMPLETE2', 'DAILY2') AS RECORD_TYPE,
             IFF(index in (0, PERIOD_PLUS), start_time, dateadd('day', index, date_trunc('day', start_time))) as ST,
             IFF(index in (PERIOD_PLUS - 1, PERIOD_PLUS), end_time, least(CURRENT_TIMESTAMP(), dateadd('day', index + 1, date_trunc('day', start_time)))) as ET,
             date_trunc('day', ST) AS ST_PERIOD,
@@ -54,13 +54,13 @@ BEGIN
                 tools.qtag_to_map(qtag) as qtag_filter,
                 unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST,
                 * exclude (period_plus, record_type)
-            from internal_reporting_mv.query_history_complete_and_daily where RECORD_TYPE = 'COMPLETE'
+            from internal_reporting_mv.query_history_complete_and_daily where RECORD_TYPE IN ('COMPLETE2','DAILY')
             union all
             select
                 tools.qtag_to_map(qtag) as qtag_filter,
                 unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST,
                 * exclude (period_plus, record_type)
-            from internal_reporting_mv.query_history_complete_and_daily_incomplete where RECORD_TYPE = 'COMPLETE'
+            from internal_reporting_mv.query_history_complete_and_daily_incomplete where RECORD_TYPE IN ('COMPLETE2','DAILY')
             ;
     $$;
     RETURN 'Success';
@@ -81,11 +81,11 @@ BEGIN
     as
         select
                 tools.qtag_to_map(qtag) as qtag_filter,
-        unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST, * exclude (period_plus, record_type) from internal_reporting_mv.query_history_complete_and_daily where RECORD_TYPE = 'DAILY'
+        unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST, * exclude (period_plus, record_type) from internal_reporting_mv.query_history_complete_and_daily where RECORD_TYPE IN ('COMPLETE','DAILY2')
         union all
         select
                 tools.qtag_to_map(qtag) as qtag_filter,
-        unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST, * exclude (period_plus, record_type) from internal_reporting_mv.query_history_complete_and_daily_incomplete where RECORD_TYPE = 'DAILY';
+        unloaded_direct_compute_credits * INTERNAL.GET_CREDIT_COST(warehouse_id) as COST, * exclude (period_plus, record_type) from internal_reporting_mv.query_history_complete_and_daily_incomplete where RECORD_TYPE IN ('COMPLETE','DAILY2');
     $$;
     RETURN 'Success';
 END;
